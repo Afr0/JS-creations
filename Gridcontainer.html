@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Quiz 01</title>
+
+        <style>
+            .grid-container {
+                display: flex;
+                flex-wrap:nowrap;
+                flex-direction: column;
+            }
+
+            .grid-item {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: bisque;
+                padding: 16px;
+                background-color: chocolate;
+                max-width: 400px;
+            }
+
+            .grid-item img {
+                padding-right: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="img-container" class="grid-container"></div>
+        <img id="bigImg" width="432"/> 
+
+        <script>
+            let chocoArr = [
+                {
+                    id: 35,
+                    price: 12,
+                    name: "Tiger",
+                    descr: "Lys sjokolademousse med striper av mocca-mousse og overtrekk av mørk sjokolade",
+                    img_small: "http://sukkergris.no/konfekt/bilder_s/Truffel_boks03.jpg"
+                },
+                {
+                    id: 24,
+                    price: 15,
+                    name: "Green ferret",
+                    descr: "Eple-fondant i mørk melkesjokolade",
+                    img_small: "http://sukkergris.no/konfekt/bilder_s/PralinHardGreenFondant.jpg"
+                },
+                {
+                    id: 27,
+                    price: 21,
+                    name: "Afterglow",
+                    descr: "Appelsinfondant blandet med appelsinlikørgelé og overtrekk av mørk sjokolade",
+                    img_small: "http://sukkergris.no/konfekt/bilder_s/PralinSoftOrangeFondantGel.jpg"
+                },
+                {
+                    id: 26,
+                    price: 15,
+                    name: "Black mist",
+                    descr: "Mocca ganache i mørk melkesjokolade",
+                    img_small: "http://sukkergris.no/konfekt/bilder_s/PralinSoftDarkChoc.jpg"
+                },
+                {
+                    id: 30,
+                    price: 10,
+                    name: "Black & white",
+                    descr: "Hvit sjokolade med overtrekk av mørk melkesjokolade",
+                    img_small: "http://sukkergris.no/konfekt/bilder_s/PureChocDarkWhite.jpg"
+                },
+                {
+                    id:20,
+                    price:16,
+                    name:"Rum & cherry",
+                    descr:"Kirsebær i rom-likør",
+                    img_small:"http://sukkergris.no/konfekt/bilder_s/Pralin_cherry_soft_gel.jpg"
+                }   
+            ];
+
+            for(let i = 0; i < chocoArr.length; i++) {
+                let div = document.createElement("div");
+                let textDiv = document.createElement("div");
+                div.id = chocoArr[i].id;
+                div.className = "grid-item";
+                
+                let img_small = document.createElement("img");
+                img_small.src = chocoArr[i].img_small;
+                img_small.addEventListener("click", function() {
+                    let bigImg = document.getElementById("bigImg");
+                    //bigImg.className = "grid-item";
+                    bigImg.src = chocoArr[i].img_small.replace("bilder_s", "bilder_m");
+                });
+                div.appendChild(img_small);
+                div.appendChild(textDiv); //This is important to make sure that the text is to the right of the image...
+
+                let name = document.createElement("h3");
+                name.innerHTML = chocoArr[i].name;
+                textDiv.appendChild(name);
+
+                let descr = document.createElement("p");
+                descr.innerHTML = chocoArr[i].descr;
+                textDiv.appendChild(descr);
+
+                let price = document.createElement("p");
+                price.innerHTML = "kr " + chocoArr[i].price + ",-";
+                textDiv.appendChild(price);
+
+                document.getElementById("img-container").appendChild(div);
+            }
+        </script>
+    </body>
+</html>

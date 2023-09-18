@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="no" style="display: table; margin: auto;">
+<head>
+  <meta charset="UTF-8">
+  <title>Piechart renderer</title>
+</head>
+<body>
+    <script>
+        const canvasWidth = 600, canvasHeight = 600;
+
+        var canvas = document.createElement("canvas");
+        canvas.id = "pieCanvas";
+        canvas.width = canvasWidth.toString();
+        canvas.height = canvasHeight.toString();
+        document.body.appendChild(canvas);
+
+        var context = canvas.getContext("2d");
+
+        //Asked ChatGPT for the formula, because maths
+        //isn't my strong suit. But made the function
+        //myself.
+        var percentageToRadians = (percentage) => {
+            return (percentage / 100) * (Math.PI * 2); 
+        }
+
+        var lastEndAngle = 0;
+        var drawPieSlice = (center, radius, angle) => {
+            context.beginPath();
+            if(angle - (Math.PI * 2)) {
+                context.moveTo(center, center);
+            }
+            context.arc(center, center, radius, lastEndAngle, lastEndAngle + angle);
+            lastEndAngle += angle;
+            if(angle - (Math.PI * 2)) {
+                context.lineTo(center, center);
+            }
+            context.closePath();
+            let selectedColor = 0;
+
+            //Inelegant solution, but faster than string comparison.
+            while(selectedColor == usedColors.has(selectedColor))
+                selectedColor = Math.floor(Math.random() * colors.length);
+
+            usedColors.set(selectedColor, colors[selectedColor]);
+            context.fillStyle = colors[selectedColor];
+            context.fill();
+
+            context.stroke();
+        }
+        
+        //Should be 100 named colors, to cover all our bases (in practice, no one would ever add 100 slices, but whatever...)
+        var colors = ["aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "blue", "blueviolet", "brown",
+                      "black", "blanchedalmond", "burlywood", "cyan", "cadetblue", "chartreuse", "chocolate", "coral",
+                      "cornflowerblue", "cornsilk", "crimson", "red", "green", "yellow", "pink", "darkblue", "darkcyan",
+                      "darkgoldenrod", "darkgray", "darkgrey", "darkgreen", "darkkhaki", "darkmagenta", "darkolivegreen",
+                      "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen", "darkslateblue", "darkslategrey", 
+                      "darkturquoise", "darkviolet", "deeppink", "deepskyeblue", "dimgray", "dodgerblue", "firebrick", 
+                      "floralwhite", "forestgreen", "fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod", "gray", "grey",
+                      "green", "greenyellow", "honeydew", "hotpink", "indianred", "indigo", "ivory", "khaki", "lavender", 
+                      "lavenderblush", "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow",
+                      "lightgray", "lightgreen", "pightpink", "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray",
+                      "lightslategrey", "lightsteelblue", "lightyellow", "lime", "limegreen", "linen", "magenta", "maroon",
+                      "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen", "mediumslateblue",
+                      "mediumorchid", "mediumpurple", "mediumseagreen", "purple", "white"];
+        let usedColors = new Map();
+
+        var input = document.createElement("input");
+        input.id = "txtValue";
+        document.body.appendChild(input);
+
+        var btn = document.createElement("button");
+        btn.id = "btnAddValue";
+        btn.textContent = "Add value";
+        document.body.appendChild(btn);
+
+        drawPieSlice(canvasWidth / 2, canvasWidth / 2, percentageToRadians(100));
+        btn.addEventListener("click", () => {
+            if((input.value != "") && (!isNaN(parseInt(input.value)))) { //Sanity checking.
+                drawPieSlice(canvasWidth / 2, canvasWidth / 2, percentageToRadians(parseInt(input.value)));
+            }
+        });
+    </script>
+</body>
+</html>

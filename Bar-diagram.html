@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="no" style="display: table; margin: auto;">
+<head>
+  <meta charset="UTF-8">
+  <title>Barchart renderer</title>
+</head>
+<body>
+    <canvas id="barCanvas" width="600" height="400"></canvas>
+    <input type="text" id="txtValue">
+    <button id="btnAddValue">Add value</button>
+
+    <script>
+        let canvas = document.getElementById("barCanvas");
+        let context = canvas.getContext("2d");
+        let txtValue = document.getElementById("txtValue");
+        let btnAddValue = document.getElementById("btnAddValue");
+        let bars = [];
+
+        function draw() {
+            context.reset();
+            let maxValue = Math.max(...bars); //using the spread operator to find max in the array
+            let verticalScale = 400 / maxValue;
+
+            let gap = 10; //10 px between bars
+            //Had to make an adjustment to original formula to account for one bar.
+            //Dividing by 3 seems to provide a nice width.
+            let barWidth = parseInt((bars.length > 1) ? 600 / bars.length : 600 / 3) - gap;
+
+            for(let i = 0; i < bars.length; i++) {
+                let x = i * (barWidth + gap);
+                let height = bars[i] * verticalScale;
+                context.fillStyle = "purple";
+                context.fillRect(x, 400 - height, barWidth, height);
+            }
+        }
+
+        btnAddValue.addEventListener("click", function() {
+            if(!isNaN(txtValue.value)) {
+                let barHeight = parseInt(txtValue.value);
+                if(barHeight <= 400) {
+                    bars.push(barHeight);
+                    draw();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
