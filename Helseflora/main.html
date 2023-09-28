@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Helseflora</title>
+
+  <style>
+    .header {
+        color: #819258;
+        background-color: #323A35; /*Picked this color from the original PDF.*/
+        font-weight: bold;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 16px;
+    }
+
+    /*Style for the column, which will hold all of the rows.*/
+    .column {
+      width: fit-content;
+    }
+
+    /*Style for each row */
+    .row {
+      background-color: #323A35; /*Picked this color from the original PDF.*/
+      color: #F0F8DD;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 16px;
+      border-bottom: 1px solid #ccc;
+      border-color: #404E3B;
+    }
+
+    body {
+        background-color: #323A35;
+    }
+
+    /*Change background color for each row EXCEPT the first child.*/
+    .row:not(:first-child):hover { 
+        background-color: #526358;
+        cursor: pointer;
+    }
+
+    /*First child should have a special text color.*/
+    .row:first-child {
+        color: #506055;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="header">
+        Helseflora
+    </div>
+
+    <div class="column">
+        <div class="row">
+            <h2>Kategorier</h2>
+        </div>
+    </div>
+
+    <script>
+        /*Some thoughts about the code: 
+          The fetchData() function should ideally have been in its own class in a separate file, something like a DataFetcher
+          class, but I didn't have a lot of time to mull over the technical design specifications before starting this (I'm doing
+          40 studiepoeng this semester). The lesson here is, sometimes things just have to be 
+          hacked together to meet a deadline, but no one's actually going to care (well, except for the maintenance programmer, 
+          but that's a story for another day) so long as things work as expected.*/
+
+        var columnClass = document.getElementsByClassName("column")[0];
+        var cachedData = localStorage.getItem('plantDataCache');
+        let hour = 60 * 60 * 1000; //An hour in millisecs.
+
+        localStorage.clear();
+
+        function fetchData() {
+            //Specifying the method isn't neccessary but since we'll have an oral exam in this,
+            //let us remind ourselves that we're sending a GET request to the server.
+            //Apparently the browser will handle the SSL handshake for us so
+            //we don't have to worry about it, we can just use fetch as normal. Nice!
+            fetch("https://sukkergris.no/plantcategories/", {method: "GET"})
+                .then(response => {
+                    if (!response.ok) 
+                        throw Error(response.statusText);
+
+                    return response.json(); //fetch() returns a promise (asynchronously), which when resolved will contain JSON data.
+                })
+                .then(data => { 
+                    populatePlantCategories(data);
+                    //Cache the fetched data to localStorage - localStorage only supports strings, so stringify...
+                    localStorage.setItem('plantDataCache', JSON.stringify(data));
+                }).catch(error => {
+                    console.log(error);
+                });
+        }
+
+        if(cachedData) {
+            let cachedObj = JSON.parse(cachedData);
+            let currentTime = new Date().getTime();
+            let cacheTime = cachedObj.timestamp;
+
+            //This website presumably doesn't have to be very responsive, so an hour should be fine.
+            if((currentTime - cacheTime) <= hour)
+                populatePlantDataRows(cachedObj.data);
+            else
+                fetchData();
+        } else {
+            fetchData();
+        }
+
+        function populatePlantCategories(rowData) {
+            for(let i = 0; i < rowData.length; i++)  {
+                let row = document.createElement("div");
+                row.classList.add("row"); //Creates a div class.
+                row.innerHTML = rowData[i].kategori;
+                row.addEventListener("click", function() {
+                    window.location.href = "http://127.0.0.1:5500/Helseflora/plants.html?category=" + 
+                    encodeURIComponent(rowData[i].kategori.toLowerCase());
+                });
+
+                columnClass.appendChild(row);
+            }
+        }
+    </script>
+</body>
+</html>

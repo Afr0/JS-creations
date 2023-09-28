@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Helseflora</title>
+
+  <style>
+    .header {
+        color: #819258;
+        background-color: #323A35; /*Picked this color from the original PDF.*/
+        font-weight: bold;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 16px;
+    }
+
+    /*Style for the column, which will hold all of the rows.*/
+    .column {
+      width: fit-content;
+    }
+
+    body {
+        background-color: #323A35;
+    }
+
+    /*Style for each row.*/
+    .row {
+      background-color: #323A35; /*Picked this color from the original PDF.*/
+      color: #F0F8DD;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 16px;
+      border-bottom: 1px solid #ccc;
+      border-color: #404E3B;
+    }
+
+    .backButton {
+        background-color: #77AB18;
+        color: #E7F5D5;
+        border-radius: 50%;
+    }
+
+    /*Change background color for each row EXCEPT the first child.*/
+    .row:not(:first-child):hover {
+        background-color: #526358;
+        cursor: pointer;
+    }
+
+    /*First child should have a special text color.*/
+    .row:first-child {
+        color: #506055;
+    }
+
+    /* Equivalent to <img align=left> */
+    .leftAlignedImage {
+        float: left;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="header">
+        <button class="backButton"><-</button> Helseflora
+    </div>
+
+    <div class="column">
+    </div>
+
+    <script>
+          /*Some thoughts about the code: 
+          The fetchData() function should ideally have been in its own class in a separate file, something like a DataFetcher
+          class, but I didn't have a lot of time to mull over the technical design specifications before starting this. 
+          The lesson here is, sometimes things just have to be hacked together to meet a deadline,
+          but no one's actually going to care (well, except for the maintenance programmer, but that's a story for another day)
+          so long as things work as expected.*/
+
+        var category = "";
+        var columnClass = document.getElementsByClassName("column")[0];
+        var cachedData = localStorage.getItem('plantCategoriesCache');
+        let hour = 60 * 60 * 1000; //An hour in millisecs.
+        let urlParams = new URLSearchParams(window.location.search);
+        //Of course there's no way to get ONE SPECIFIC ELEMENT by class name, no, you HAVE TO GET EVERY LAST SINGLE ONE
+        let backBtn = document.getElementsByClassName("backButton");
+
+        backBtn[0].addEventListener("click", function() {
+            window.location.href = "http://127.0.0.1:5500/Helseflora/main.html";
+        });
+
+        function fetchData() {
+            //Specifying the method isn't neccessary but since we'll have an oral exam in this shit,
+            //let us remind ourselves that we're sending a HTTP GET request to the server.
+            //I asked ChatGPT, and apparently the browser will handle the SSL handshake for us so
+            //we don't have to worry about it, we can just use fetch as normal. Nice!
+            fetch("https://sukkergris.no/plants/?category=" + encodeURIComponent(category), { method: "GET" })
+                .then(response => {
+                    if (!response.ok) 
+                        throw Error(response.statusText);
+
+                    return response.json(); //fetch returns a promise (asynchronously), which when resolved will contain JSON data.
+                })
+                .then(data => { //JSON() reads the response AND calls JSON.parse(), conveniently enough, and asynchronously resolves to data.
+                    populatePlantDataRows(data);
+                    //Cache the fetched data to localStorage - localStorage only supports strings, so stringify...
+                    localStorage.setItem('plantCategoriesCache', JSON.stringify({ data: data, timestamp: new Date().getTime() }));
+                })
+                .catch(error => console.error('Error fetching data: ', error));
+        }
+
+        //No idea if 'ø' would work in a production environment, but it works locally...
+        category = urlParams.has("category") ? urlParams.get("category") : "fordøyelse";
+                
+        let categoryTitle = document.createElement("div");
+        categoryTitle.classList.add("row");
+                    
+        //FFS, there has to be an easier way to do this, but it works.
+        let firstChar = urlParams.get("category").charAt(0);
+        let FFS = firstChar.toUpperCase() + category.replace(firstChar, "");
+                    
+        categoryTitle.innerHTML += "<h2>" + FFS + "</h2>";
+        columnClass.appendChild(categoryTitle);
+    
+        if(cachedData) {
+            let cachedObj = JSON.parse(cachedData);
+            let currentTime = new Date().getTime();
+            let cacheTime = cachedObj.timestamp;
+
+            //This website presumably doesn't have to be very responsive, so an hour should be fine.
+            if((currentTime - cacheTime) <= hour)
+                populatePlantDataRows(cachedObj.data);
+            else
+                fetchData();
+        } else {
+            fetchData();
+        }
+
+        function populatePlantDataRows(rowData) {
+            for(let i = 0; i < rowData.length; i++) {
+                let plantRow = document.createElement("div");
+                plantRow.innerHTML = "<img class='leftAlignedImage' src=" + "https://sukkergris.no/plantimages/small/" + rowData[i].bildefil + ">";
+                plantRow.classList.add("row");
+                plantRow.innerHTML += "<b>" + rowData[i].navn + "</b></br>"; 
+                plantRow.innerHTML += rowData[i].beskrivelse + "</br>";
+                plantRow.innerHTML += "kr " + rowData[i].pris + ",-";
+                //TODO: Add tilbud...
+                columnClass.appendChild(plantRow);
+                plantRow.addEventListener("click", function() {
+                    //The encodeURIComponent() function encodes a URI by replacing each instance of 
+                    //certain characters by one, two, three, or four escape sequences representing 
+                    //the UTF-8 encoding of the character (will only be four escape sequences for 
+                    //characters composed of two surrogate characters). 
+                    window.location.href = "http://127.0.0.1:5500/Helseflora/plantdetails.html?id=" + 
+                    encodeURIComponent(rowData[i].id) + "&" + "category=" + encodeURIComponent(category);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

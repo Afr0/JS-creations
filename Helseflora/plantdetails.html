@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Helseflora</title>
+
+  <style>
+    .header {
+        color: #819258;
+        background-color: #323A35; /*Picked this color from the original PDF.*/
+        font-weight: bold;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 16px;
+    }
+
+    /*Style for the column, which will hold all of the rows.*/
+    .column {
+      width: 350px;
+      justify-content: center;
+      border: 1px solid #444B43;
+    }
+
+    body {
+        background-color: #323A35;
+    }
+
+    /*Style for each row.*/
+    .row {
+      background-color: #323A35; /*Picked this color from the original PDF.*/
+      color: #F0F8DD;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: small;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      border-bottom: 1px solid #444B43;
+      border-color: #404E3B;
+      padding-left: 25px;
+    }
+
+    .backButton {
+        background-color: #77AB18;
+        color: #E7F5D5;
+        border-radius: 55%;
+    }
+
+    .image-container {
+        position: relative;
+        display: flex; /*Allows for flexible alignment of items, even when their sizes are unknown or dynamic.*/
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        padding-left: 25px;
+        padding-top: 25px;
+        padding-right: 25px;
+        background-color: #323A35;
+        margin: auto;
+    }
+
+    .label {
+        position: absolute;
+        top: 45px;
+        background-color: rgba(82, 99, 88, 0.7);
+        color: #F0F8DD;
+        width: 86%; /* Full width of the container*/
+        text-align: left; /*Center the text horizontally*/
+    }
+
+    /*First child should have a special text color.*/
+    .row:first-child {
+        color: #506055;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="header">
+        <button class="backButton"><-</button> Helseflora
+    </div>
+
+    <div class="column">
+    </div>
+
+    <script>
+        let urlParams = new URLSearchParams(window.location.search);
+        //Let's set a default value so we'll render something either way
+        let id = urlParams.has("id") ? urlParams.get("id") : 5; 
+        var columnClass = document.getElementsByClassName("column")[0];
+        //Of course there's no way to get ONE SPECIFIC ELEMENT by class name, no, you HAVE TO GET EVERY LAST SINGLE ONE
+        let backBtn = document.getElementsByClassName("backButton");
+        
+        let plantTitle = document.createElement("div");
+        plantTitle.classList.add("row");
+        let plantImage = document.createElement("img");
+        let imageContainer = document.createElement("div");
+        imageContainer.classList.add("image-container");
+        
+        var cachedData = localStorage.getItem('plantDetailsCache');
+        let hour = 60 * 60 * 1000; //An hour in millisecs.
+
+        function fetchData() {
+            fetch("https://sukkergris.no/plant/?id=" + encodeURIComponent(id), {method: "GET"})
+                .then(response => {
+                    if (!response.ok) 
+                        throw Error(response.statusText);
+
+                        return response.json(); //fetch returns a promise (asynchronously), which when resolved will contain JSON data.
+                    })
+                    .then(data => { //JSON() reads the response AND calls JSON.parse(), conveniently enough, and asynchronously resolves to data.
+                        setupImgAndTitle(data);
+
+                        populatePlantDataRows(data);
+                        //Cache the fetched data to localStorage - localStorage only supports strings, so stringify...
+                        localStorage.setItem('plantDetailsCache', JSON.stringify({ data: data, timestamp: new Date().getTime() }));
+                    }).catch(error => {
+                        console.log(error);
+                    });
+        }
+
+        function setupImgAndTitle(data) {
+            plantImage.src = "https://sukkergris.no/plantimages/large/" + data.bildefil.replace("png", "jpg");
+            plantImage.style.width = "100%";
+            plantImage.style.height = "auto";
+            imageContainer.appendChild(plantImage);
+            columnClass.appendChild(imageContainer);
+                        
+            plantTitle.innerHTML += "<h2>" + data.navn + "</h2>";
+            plantTitle.classList.add("label");
+            imageContainer.appendChild(plantTitle);
+        }
+
+        function setBackBtnEventListener() {
+            backBtn[0].addEventListener("click", function() {
+                    //The encodeURIComponent() function encodes a URI by replacing each instance of 
+                    //certain characters by one, two, three, or four escape sequences representing 
+                    //the UTF-8 encoding of the character (will only be four escape sequences for 
+                    //characters composed of two surrogate characters). 
+                    window.location.href = "http://127.0.0.1:5500/Helseflora/plants.html?category=" + 
+                    encodeURIComponent(urlParams.get("category")); 
+                });
+        }
+
+        if(cachedData) {
+            let cachedObj = JSON.parse(cachedData);
+            let currentTime = new Date().getTime();
+            let cacheTime = cachedObj.timestamp;
+
+            //This website presumably doesn't have to be very responsive, so an hour should be fine.
+            if((currentTime - cacheTime) <= hour) {
+                setupImgAndTitle(cachedObj.data);
+                populatePlantDataRows(cachedObj.data);
+            } else
+                fetchData();
+
+            if(urlParams.has("category")) {
+                setBackBtnEventListener();
+            }
+        } else {
+            fetchData();
+
+            if(urlParams.has("category")) {
+                setBackBtnEventListener();
+            }
+        }
+
+        function populatePlantDataRows(rowData) {
+            let dagGrad = (rowData.min_temp_dag > 1) ? " grader" : " grad"; //Sigh...
+            let nattGrad = (rowData.min_temp_natt > 1) ? " grader" : " grad"; //Sigh...
+
+            let categoryRow = document.createElement("div");
+            categoryRow.classList.add("row");
+            categoryRow.innerHTML = "Kategori: " + rowData.kategori;
+            columnClass.appendChild(categoryRow);
+
+            let descriptionRow = document.createElement("div");
+            descriptionRow.classList.add("row");
+            descriptionRow.innerHTML += rowData.beskrivelse;
+            columnClass.appendChild(descriptionRow);
+
+            //I was growing tired at this point, so humor me. Ava is a popular baby name, apparently.
+            //https://cs.fit.edu/~kgallagher/Schtick/How%20To%20Write%20Unmaintainable%20Code.html
+            let avaRow = document.createElement("div");
+            avaRow.classList.add("row");
+            avaRow.innerHTML += "Normal høyde: " + rowData.hoyde + "</br>";
+            avaRow.innerHTML += "Vekstsone: " + rowData.vekstsone + "</br>";
+            avaRow.innerHTML += "Anbefalt gjødselmiks: " + rowData.nitrogen + "% nitrogen, " + rowData.kalium + "% kalium og " + 
+                                  rowData.fosfor + "% fosfor. Bør ikke plantes hvis temperaturen om dagen er under " + 
+                                  rowData.min_temp_dag + dagGrad + ", eller temperaturen om natten er under " + 
+                                  rowData.min_temp_natt + nattGrad + ".";
+            columnClass.appendChild(avaRow);
+
+            let priceRow = document.createElement("div");
+            priceRow.classList.add("row");
+            priceRow.innerHTML += "kr " + rowData.pris + ",- per stk.";
+            columnClass.appendChild(priceRow);
+            //TODO: Add tilbud...
+        }
+    </script>
+</body>
+</html>
