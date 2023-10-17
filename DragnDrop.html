@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="no" /*style="display: table; margin: auto;"*/>
+<head>
+  <meta charset="UTF-8">
+  <title>Drag 'n Drop</title>
+</head>
+<style>
+    .carDiv {
+        background-color:azure;
+        border-top:1px solid;
+        border-bottom: 1px solid;
+        border-color: black;
+    }
+    .deleteBtn {
+        color:red;
+    }
+</style>
+<body>
+    <div class="container"></div>
+    <dialog id="editDialog"></dialog>
+    <img src="Bin.PNG" width="75px" height="115px" id="bin">
+
+    <script>
+        let container = document.getElementsByClassName("container")[0];
+        let cars = ["Volvo", "Peugeot", "Citroen", "Porche", "Skoda"];
+        let bin = document.getElementById("bin");
+
+        bin.addEventListener("dragover", function (e) {
+            e.preventDefault(); //The default browser behavior is to disable drops, so prevent it.
+        });
+
+        bin.addEventListener("dragenter", function (e) {
+            e.preventDefault(); //The default browser behavior is to disable drops, so prevent it.
+        });
+
+        bin.addEventListener("drop", function(e) {
+            let carId = e.dataTransfer.getData("text"); //Gets the text data of the element that was dragged.
+            let carDiv = document.getElementById(carId);
+            container.removeChild(carDiv);
+        });
+
+        for(let i = 0; i < cars.length; i++) {
+            let carDiv = document.createElement("div");
+            carDiv.innerHTML = cars[i];
+            carDiv.classList.add("carDiv");
+            //Now, we COULD just add either textContent or cars[i] here, but eventually some 
+            //idiot user would come along and add two brands with the same name. Or some
+            //other dumbfuckery beyond our control, so let's not do that...
+            carDiv.id = "carBrand_" + i; 
+            carDiv.draggable = true;
+            carDiv.addEventListener("dragstart", function(e) {
+                e.dataTransfer.setData("text", carDiv.id);
+            });
+
+            let deleteBtn = document.createElement("button");
+            deleteBtn.classList.add("deleteBtn");
+            deleteBtn.innerHTML = "Delete";
+            deleteBtn.addEventListener("click", function() {
+                container.removeChild(carDiv);
+            });
+            
+            let editBtn = document.createElement("button");
+            editBtn.innerHTML = "Edit";
+            editBtn.addEventListener("click", function() {
+                editDialog = document.getElementById("editDialog");
+                editDialog.innerHTML = "Please change the car brand: ";
+                
+                txtCarBrand = document.createElement("input", "type='text'");
+                editDialog.appendChild(txtCarBrand);
+
+                let closeButton = document.createElement("button");
+                closeButton.innerHTML = "Close";
+                closeButton.addEventListener("click", function() {
+                    let inputValue = txtCarBrand.value;
+                    if (/^[a-æøåA-ÆØÅ0-9\s]+$/i.test(inputValue) && inputValue !== "") { //Sanity check
+                        carDiv.textContent = inputValue; //Prevent cross-site scripting by using textContent...
+                        carDiv.appendChild(editBtn);
+                        carDiv.appendChild(deleteBtn);
+                    }
+
+                    editDialog.close();
+                });
+
+                editDialog.appendChild(closeButton);
+                editDialog.showModal();
+            });
+
+            carDiv.appendChild(editBtn);
+            carDiv.appendChild(deleteBtn);
+            container.appendChild(carDiv);
+        }
+    </script>
+</body>
+</html>
